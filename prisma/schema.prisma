@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RewardKind {
+  CASHBACK
+  POINTS
+}
+
+model AppUser {
+  /// Clerk user id (single source of truth for identity)
+  id        String   @id
+  email     String?  @db.VarChar(320)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plaidItems   PlaidItem[]
+  plaidAccounts PlaidAccount[]
+  transactions  Transaction[]
+  creditCards  CreditCard[]
+  transactionBestCards TransactionBestCard[]
+}
+
+model PlaidItem {
+  id String @id @default(uuid())
+
+  userId        String
+  user          AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Plaid "item_id"
+  plaidItemId String @unique @db.VarChar(64)
+
+  /// Encrypted access token(s). We store ciphertext only.
+  accessTokenEncrypted String
+  cursor                String?
+  lastSyncAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      PlaidAccount[]
+  transactions  Transaction[]
+
+  @@index([userId, lastSyncAt])
+}
+
+model PlaidAccount {
+  id String @id @default(uuid())
+
+  userId       String
+  user         AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plaidItemId  String
+
+  item         PlaidItem @relation(fields: [plaidItemId], references: [plaidItemId], onDelete: Cascade)
+  plaidAccountId String @db.VarChar(128)
+  name            String?
+  mask            String?
+  officialName    String?
+  type            String?
+  subtype         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plaidItemId, plaidAccountId])
+  @@index([userId, plaidItemId])
+}
+
+model Transaction {
+  id String @id @default(uuid())
+
+  userId      String
+  user        AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plaidItemId        String @db.VarChar(64)
+  item               PlaidItem @relation(fields: [plaidItemId], references: [plaidItemId], onDelete: Cascade)
+  plaidAccountId     String? @db.VarChar(128)
+  plaidTransactionId String  @unique @db.VarChar(128)
+
+  date         DateTime
+  amount       Decimal  @db.Decimal(12,2)
+  currency     String   @db.VarChar(8)
+
+  name         String
+  merchantName String?
+
+  categories   String[]
+  paymentChannel String?
+  transactionType String?
+  pending      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bestCard TransactionBestCard?
+
+  @@index([userId, date])
+  @@index([userId, plaidItemId])
+}
+
+model CreditCard {
+  id String @id @default(uuid())
+
+  userId   String
+  user     AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nickname String
+  institution String?
+  last4 String?
+
+  rewardKind RewardKind @default(CASHBACK)
+
+  /// Default multiplier (e.g., 1.0 means $1 -> 1x rewards; 1.5 means $1 -> 1.5x)
+  defaultMultiplier Decimal @db.Decimal(10,4) @default(1)
+  annualFee          Decimal? @db.Decimal(12,2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rewardRules RewardRule[]
+  transactionBestCards TransactionBestCard[]
+}
+
+model RewardRule {
+  id String @id @default(uuid())
+
+  creditCardId String
+  creditCard   CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+
+  /// Plaid top category (e.g., "food and drink", "travel")
+  category String @db.VarChar(120)
+
+  multiplier Decimal @db.Decimal(10,4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([creditCardId, category])
+  @@index([category])
+}
+
+model TransactionBestCard {
+  id String @id @default(uuid())
+
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactionId String @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  creditCardId String
+  creditCard   CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Restrict)
+
+  /// Expected rewards for the transaction when using this card.
+  expectedReward Decimal @db.Decimal(12,4)
+
+  /// Which rule matched (category name), or null if default multiplier.
+  appliedCategory String? @db.VarChar(120)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, creditCardId])
+}
