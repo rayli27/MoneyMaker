@@ -1,61 +1,180 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💸 MoneyMaker
 
-## Getting Started
+> Your all-in-one personal finance command center — built to track, categorize, optimize, and grow your money.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Vision
+
+MoneyMaker is a personal finance platform that starts as a smart transaction tracker and evolves into a full financial optimizer. The long-term goal: one app that knows your spending, tells you which credit cards to open and when, how to churn points for maximum value, and eventually guides your investments and tax strategy.
+
+**Phase 1** → Track & categorize transactions automatically via Plaid  
+**Phase 2** → Spending intelligence: trends, budgets, category breakdowns  
+**Phase 3** → Credit card optimization: best card per purchase, churning strategy  
+**Phase 4** → Investment & tax guidance (future)
+
+---
+
+## Current Status — Week 1 (MVP Foundation)
+
+### ✅ Done
+
+- **Project scaffolded** — Next.js 16 (App Router) + TypeScript
+- **Authentication** — Clerk integrated with middleware protecting all routes
+- **Database** — Prisma ORM connected to Supabase Postgres, migrations ready
+- **Plaid SDK installed** — `plaid` + `react-plaid-link` packages wired up
+- **Tailwind CSS v4** — styling configured
+- **Agent conventions** — `CLAUDE.md` + `AGENTS.md` set for AI-assisted development
+
+### 🔄 In Progress / Up Next
+
+| Priority | Feature | Description |
+|----------|---------|-------------|
+| 1 | **Plaid Link UI** | Connect bank accounts via Plaid Link modal |
+| 2 | **`/api/plaid/sync` endpoint** | Incremental transaction sync with anti-duplicate guard |
+| 3 | **Spending Intelligence UI** | Monthly spend by category with trends |
+| 4 | **Credit Card Optimizer** | Best-card-per-purchase calc using stored reward rules |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Next.js 16](https://nextjs.org) (App Router) |
+| Language | TypeScript |
+| Auth | [Clerk](https://clerk.com) |
+| Database | [Supabase](https://supabase.com) Postgres |
+| ORM | [Prisma 7](https://prisma.io) |
+| Bank Sync | [Plaid](https://plaid.com) |
+| Styling | Tailwind CSS v4 |
+| AI | Claude API (Anthropic) — for categorization & insights |
+
+---
+
+## Project Structure
+
+```
+moneymaker-app/
+├── app/                  # Next.js App Router pages & API routes
+├── lib/                  # Shared utilities, Prisma client, Plaid client
+├── prisma/               # Schema & migrations
+│   └── schema.prisma
+├── public/               # Static assets
+├── middleware.ts          # Clerk auth middleware
+├── CLAUDE.md             # AI agent instructions (points to AGENTS.md)
+├── AGENTS.md             # Coding conventions for AI-assisted dev
+└── .env                  # Local env vars (never commit)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Getting Started (Local Dev)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
 
-## Learn More
+- Node.js 18+
+- A [Supabase](https://supabase.com) project (free tier works)
+- A [Clerk](https://clerk.com) account
+- A [Plaid](https://plaid.com) account (Sandbox is free)
 
-To learn more about Next.js, take a look at the following resources:
+### 1. Clone & Install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+git clone https://github.com/rayli27/MoneyMaker.git
+cd MoneyMaker
+npm install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Environment Variables
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Supabase Postgres (MoneyMaker MVP)
-
-### Set env vars
 Copy `.env.example` to `.env` and fill in:
-- `DATABASE_URL` (Supabase Postgres connection string)
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
 
-Supabase `DATABASE_URL` format example:
-`postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres?schema=public&sslmode=require`
+```env
+# Supabase
+DATABASE_URL=postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres?schema=public&sslmode=require
 
-### Run DB migrations
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+
+# Plaid
+PLAID_CLIENT_ID=...
+PLAID_SECRET=...
+PLAID_ENV=sandbox   # sandbox | development | production
+
+# Anthropic (AI features)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### 3. Database Setup
+
+If using Supabase, enable the UUID extension first:
+```sql
+-- Run in Supabase SQL editor
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
+Then run migrations:
 ```bash
 npx prisma migrate dev
 ```
 
-If migrations complain about missing `gen_random_uuid()`:
-- In Supabase SQL editor, run: `create extension if not exists pgcrypto;`
+### 4. Run Dev Server
 
-### Week-1 MVP direction (next items)
-1. Plaid connect + incremental sync endpoint (`/api/plaid/sync`)
-2. Non-blocking sync on app open/refresh (with anti-duplicate guard)
-3. Spending Intelligence UI (monthly spend + categories + trends) from stored transactions
-4. Credit card optimization (best-card calculation) using stored reward rules
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Roadmap
+
+### 🗓 Week 1 — Data Pipeline
+- [ ] Plaid Link UI (bank account connection flow)
+- [ ] `/api/plaid/sync` — incremental sync, deduplication
+- [ ] Transaction storage in Postgres via Prisma
+- [ ] Non-blocking background sync on app load
+
+### 🗓 Week 2 — Spending Intelligence
+- [ ] Dashboard: monthly spend totals + category breakdown
+- [ ] AI-powered auto-categorization via Claude API
+- [ ] Trend charts (spend over time per category)
+- [ ] Budget setting + over-budget alerts
+
+### 🗓 Week 3 — Credit Card Optimizer
+- [ ] Credit card data model (cards, reward rates by category)
+- [ ] Best-card-per-purchase recommendation engine
+- [ ] Credit card churning tracker (when to open, sign-up bonus tracking)
+- [ ] Points/miles valuation calculator
+
+### 🗓 Future Phases
+- [ ] Investment tracking & portfolio overview
+- [ ] Tax optimization hints (capital gains, deductions)
+- [ ] Net worth dashboard
+- [ ] Multi-user / family plan support
+
+---
+
+## AI Features (Claude API)
+
+MoneyMaker uses the Claude API for intelligent financial features:
+
+- **Transaction categorization** — Claude reads raw merchant names and assigns categories (groceries, dining, travel, etc.) far more accurately than keyword matching
+- **Spending insights** — Natural language summaries of your month ("You spent 40% more on dining than last month")
+- **Card recommendations** — Given a transaction, Claude identifies the optimal card from your wallet to maximize rewards
+- **Future: financial Q&A** — Ask "what's my biggest spending category this year?" in plain English
+
+---
+
+## Contributing
+
+This is a personal project in early development. If you're interested in collaborating, open an issue or reach out.
+
+---
+
+## License
+
+Private — all rights reserved.
